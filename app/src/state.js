@@ -1,153 +1,258 @@
-// Cover state: layouts, colour grades, export sizes and the undo/redo history.
-// A layout is a set of panels in normalised (0..1) coordinates plus a title zone.
-// A grade is a gradient map (dark -> light) plus overlay tint, grain and vignette.
-
-export const SIZES = [
-  { id: 'square', label: 'Square', dims: '1080 × 1080', w: 1080, h: 1080 },
-  { id: 'portrait', label: 'Portrait', dims: '1080 × 1350', w: 1080, h: 1350 },
-  { id: 'wide', label: 'Wide', dims: '1920 × 1080', w: 1920, h: 1080 },
-  { id: 'story', label: 'Story', dims: '1080 × 1920', w: 1080, h: 1920 },
-];
+// Vice Coast Cover Studio — application state.
+//
+// This module owns every fact the cover is drawn from: which layout, grade
+// and look are active, the caption words, which photo fills each panel and
+// how it is cropped, plus the undo history and the seeded random source.
+// Nothing here touches the DOM or a canvas; the renderer reads a plain
+// snapshot of this state, and the UI module writes to it through commit().
 
 export const LAYOUTS = [
-  {
-    id: 'hero-three', name: 'Hero & Three',
-    panels: [
-      { id: 'hero', x: 0.02, y: 0.02, w: 0.63, h: 0.66 },
-      { id: 'top', x: 0.67, y: 0.02, w: 0.31, h: 0.21 },
-      { id: 'mid', x: 0.67, y: 0.245, w: 0.31, h: 0.21 },
-      { id: 'low', x: 0.67, y: 0.47, w: 0.31, h: 0.21 },
-    ],
-    title: { x: 0.02, y: 0.70, w: 0.96, h: 0.28, align: 'left' },
-    badge: { x: 0.84, y: 0.70, w: 0.14, h: 0.14 },
-  },
-  {
-    id: 'grid-4', name: 'Grid 4',
-    panels: [
-      { id: 'a', x: 0.02, y: 0.02, w: 0.475, h: 0.32 },
-      { id: 'b', x: 0.505, y: 0.02, w: 0.475, h: 0.32 },
-      { id: 'c', x: 0.02, y: 0.345, w: 0.475, h: 0.32 },
-      { id: 'd', x: 0.505, y: 0.345, w: 0.475, h: 0.32 },
-    ],
-    title: { x: 0.02, y: 0.685, w: 0.96, h: 0.295, align: 'center' },
-    badge: { x: 0.86, y: 0.685, w: 0.12, h: 0.12 },
-  },
-  {
-    id: 'grid-9', name: 'Grid 9',
-    panels: [
-      { id: 'a', x: 0.015, y: 0.015, w: 0.315, h: 0.21 },
-      { id: 'b', x: 0.345, y: 0.015, w: 0.315, h: 0.21 },
-      { id: 'c', x: 0.675, y: 0.015, w: 0.31, h: 0.21 },
-      { id: 'd', x: 0.015, y: 0.24, w: 0.315, h: 0.21 },
-      { id: 'e', x: 0.345, y: 0.24, w: 0.315, h: 0.21 },
-      { id: 'f', x: 0.675, y: 0.24, w: 0.31, h: 0.21 },
-      { id: 'g', x: 0.015, y: 0.465, w: 0.315, h: 0.21 },
-      { id: 'h', x: 0.345, y: 0.465, w: 0.315, h: 0.21 },
-      { id: 'i', x: 0.675, y: 0.465, w: 0.31, h: 0.21 },
-    ],
-    title: { x: 0.015, y: 0.69, w: 0.97, h: 0.295, align: 'center' },
-    badge: { x: 0.865, y: 0.69, w: 0.12, h: 0.12 },
-  },
-  {
-    id: 'full-bleed', name: 'Full Bleed',
-    panels: [{ id: 'hero', x: 0, y: 0, w: 1, h: 0.72 }],
-    title: { x: 0.03, y: 0.70, w: 0.94, h: 0.28, align: 'left', band: true },
-    badge: { x: 0.83, y: 0.045, w: 0.13, h: 0.13 },
-  },
-  {
-    id: 'tilted', name: 'Tilted Snapshots',
-    panels: [
-      { id: 'a', x: 0.03, y: 0.03, w: 0.44, h: 0.30, rot: -4 },
-      { id: 'b', x: 0.52, y: 0.02, w: 0.44, h: 0.30, rot: 3 },
-      { id: 'c', x: 0.08, y: 0.36, w: 0.40, h: 0.30, rot: 2.5 },
-      { id: 'd', x: 0.54, y: 0.37, w: 0.40, h: 0.30, rot: -3 },
-    ],
-    title: { x: 0.02, y: 0.69, w: 0.96, h: 0.29, align: 'center' },
-    badge: { x: 0.86, y: 0.69, w: 0.12, h: 0.12 },
-  },
-  {
-    id: 'triptych', name: 'Triptych',
-    panels: [
-      { id: 'a', x: 0.02, y: 0.02, w: 0.31, h: 0.66 },
-      { id: 'b', x: 0.345, y: 0.02, w: 0.31, h: 0.66 },
-      { id: 'c', x: 0.67, y: 0.02, w: 0.31, h: 0.66 },
-    ],
-    title: { x: 0.02, y: 0.70, w: 0.96, h: 0.28, align: 'center' },
-    badge: { x: 0.86, y: 0.70, w: 0.12, h: 0.12 },
-  },
-  {
-    id: 'duo-strip', name: 'Duo Strip',
-    panels: [
-      { id: 'a', x: 0.02, y: 0.02, w: 0.475, h: 0.42 },
-      { id: 'b', x: 0.505, y: 0.02, w: 0.475, h: 0.42 },
-      { id: 'c', x: 0.02, y: 0.455, w: 0.96, h: 0.225 },
-    ],
-    title: { x: 0.02, y: 0.695, w: 0.96, h: 0.285, align: 'left' },
-    badge: { x: 0.85, y: 0.695, w: 0.13, h: 0.13 },
-  },
+  { id: 'key-art', name: 'Key Art', panels: 1, blurb: 'One large panel, title band below.' },
+  { id: 'hero-three', name: 'Hero and Three', panels: 4, blurb: 'Wide hero on top, three panels beneath.' },
+  { id: 'grid-4', name: 'Grid 4', panels: 4, blurb: 'Four equal panels, two by two.' },
+  { id: 'grid-9', name: 'Grid 9', panels: 9, blurb: 'Nine equal panels, three by three.' },
+  { id: 'poster-wall', name: 'Poster Wall', panels: 12, blurb: 'Twelve small panels with a title block.' },
+  { id: 'sunset-strip', name: 'Sunset Strip', panels: 3, blurb: 'Three horizontal bands, sunset between them.' },
+  { id: 'triptych', name: 'Triptych', panels: 3, blurb: 'Three tall vertical panels side by side.' },
+  { id: 'full-bleed', name: 'Full Bleed', panels: 1, blurb: 'One photo edge to edge, caption overlaid.' },
+  { id: 'tilted', name: 'Tilted Snaps', panels: 5, blurb: 'Overlapping prints at slight angles.' },
+  { id: 'duo', name: 'Duo Split', panels: 2, blurb: 'Two vertical panels, title across the join.' },
+  { id: 'magazine', name: 'Magazine Spread', panels: 4, blurb: 'Masthead on top, hero, three small panels.' },
 ];
 
-// Gradient map stops: [position, r, g, b] from shadows to highlights.
+// Each grade is a gradient map: a list of [position, colour] stops that a
+// photo's brightness is remapped through, dark end first.
 export const GRADES = [
-  { id: 'sunset', name: 'Sunset', stops: [[0, 18, 8, 38], [0.35, 120, 30, 90], [0.65, 255, 110, 60], [1, 255, 220, 150]], tint: '#ff7a3c', tintAlpha: 0.10 },
-  { id: 'neon', name: 'Neon', stops: [[0, 6, 8, 40], [0.35, 40, 20, 110], [0.65, 255, 45, 140], [1, 120, 240, 255]], tint: '#2ee6ff', tintAlpha: 0.10 },
-  { id: 'vice', name: 'Vice', stops: [[0, 20, 6, 34], [0.35, 150, 30, 110], [0.65, 255, 80, 160], [1, 255, 190, 220]], tint: '#ff2e88', tintAlpha: 0.12 },
-  { id: 'dusk', name: 'Dusk', stops: [[0, 8, 12, 30], [0.4, 50, 60, 110], [0.7, 200, 120, 90], [1, 255, 210, 140]], tint: '#7a5cff', tintAlpha: 0.10 },
-  { id: 'palm', name: 'Palm', stops: [[0, 10, 30, 22], [0.35, 30, 110, 80], [0.65, 255, 190, 80], [1, 255, 250, 200]], tint: '#ffd166', tintAlpha: 0.10 },
-  { id: 'noir', name: 'Noir', stops: [[0, 5, 5, 8], [0.5, 70, 70, 80], [1, 245, 240, 230]], tint: '#ffffff', tintAlpha: 0.05 },
+  { id: 'sunset', name: 'Sunset', stops: [[0, '#160a2e'], [0.25, '#6d2358'], [0.5, '#c93a4e'], [0.75, '#ff7a3c'], [1, '#ffd98a']] },
+  { id: 'neon', name: 'Neon', stops: [[0, '#0d0221'], [0.3, '#5b0a6e'], [0.55, '#e0218a'], [0.8, '#22d3ee'], [1, '#e8fbff']] },
+  { id: 'vice', name: 'Vice', stops: [[0, '#12082e'], [0.3, '#4b2a85'], [0.55, '#8a4fb8'], [0.8, '#2ec4b6'], [1, '#d6fff6']] },
+  { id: 'dusk', name: 'Dusk', stops: [[0, '#060d24'], [0.3, '#16294f'], [0.55, '#2f5d8a'], [0.8, '#7fa8c9'], [1, '#eaf3ff']] },
+  { id: 'mono', name: 'Mono', stops: [[0, '#000000'], [0.35, '#3a3a3a'], [0.65, '#8f8f8f'], [0.85, '#d8d8d8'], [1, '#ffffff']] },
+  { id: 'heatwave', name: 'Heatwave', stops: [[0, '#2b0d02'], [0.3, '#7a1e05'], [0.55, '#d94f04'], [0.8, '#ffb703'], [1, '#fff3b0']] },
+  { id: 'lagoon', name: 'Lagoon', stops: [[0, '#022b2b'], [0.3, '#0a5c4d'], [0.55, '#17a398'], [0.8, '#7ee081'], [1, '#eaffea']] },
+  { id: 'rose', name: 'Rose', stops: [[0, '#2e0a24'], [0.3, '#7a2e5d'], [0.55, '#c65d7b'], [0.8, '#f7a8b8'], [1, '#ffe9f0']] },
+  { id: 'ultraviolet', name: 'Ultraviolet', stops: [[0, '#0b0033'], [0.3, '#3d0a9e'], [0.55, '#7b2ff7'], [0.8, '#b388ff'], [1, '#efe6ff']] },
+  { id: 'ember', name: 'Ember', stops: [[0, '#0a0505'], [0.3, '#3d130a'], [0.55, '#8a2f0e'], [0.8, '#e85d04'], [1, '#ffc46b']] },
+  { id: 'midnight', name: 'Midnight', stops: [[0, '#01020a'], [0.3, '#0b1530'], [0.55, '#1d3557'], [0.8, '#5a7ba6'], [1, '#dfe9f5']] },
 ];
 
-export function defaultPanels(layoutId) {
-  const layout = LAYOUTS.find((l) => l.id === layoutId) ?? LAYOUTS[0];
-  const panels = {};
-  layout.panels.forEach((p, i) => {
-    panels[p.id] = { photo: i % 2, zoom: 1, dx: 0, dy: 0 };
-  });
-  return panels;
-}
+// A look bundles the lettering, frame and badge colours that go with a grade.
+export const LOOKS = [
+  { id: 'vice-rush', name: 'Vice Rush', title: ['#ff5e8a', '#ffb703'], titleInk: '#2b0a3d', sub: '#22d3ee', accent: '#e0218a', frame: '#ffffff', badge: '#e0218a' },
+  { id: 'golden-mile', name: 'Golden Mile', title: ['#ffb703', '#ff7a3c'], titleInk: '#3d130a', sub: '#ff5e8a', accent: '#ff7a3c', frame: '#fff8e7', badge: '#d94f04' },
+  { id: 'heatwave', name: 'Heatwave', title: ['#ffd60a', '#e85d04'], titleInk: '#2b0d02', sub: '#ffb703', accent: '#e85d04', frame: '#fff3d6', badge: '#d94f04' },
+  { id: 'night-shift', name: 'Night Shift', title: ['#e8fbff', '#7dd3fc'], titleInk: '#01020a', sub: '#22d3ee', accent: '#38bdf8', frame: '#0b1530', badge: '#22d3ee' },
+  { id: 'pier-pressure', name: 'Pier Pressure', title: ['#7ee081', '#17a398'], titleInk: '#022b2b', sub: '#ffd60a', accent: '#17a398', frame: '#eaffea', badge: '#0a5c4d' },
+  { id: 'boulevard-queen', name: 'Boulevard Queen', title: ['#ffe9f0', '#f7a8b8'], titleInk: '#2e0a24', sub: '#c65d7b', accent: '#c65d7b', frame: '#ffffff', badge: '#7a2e5d' },
+  { id: 'sunset-boulevard', name: 'Sunset Boulevard', title: ['#ffd98a', '#ff7a3c'], titleInk: '#3d130a', sub: '#ffb703', accent: '#ff7a3c', frame: '#fff8e7', badge: '#c93a4e', longShadow: true },
+  { id: 'neon-vice', name: 'Neon Vice', title: ['#22d3ee', '#e0218a'], titleInk: '#0d0221', sub: '#22d3ee', accent: '#e0218a', frame: '#0d0221', badge: '#e0218a', neon: true },
+];
 
-export function defaultState() {
-  return {
-    layout: 'hero-three',
-    grade: 'sunset',
-    size: 'square',
-    title: 'NEON COAST',
-    subtitle: 'chase the sunset',
-    badge: 'VICE NIGHTS',
-    stars: 4,
-    grain: true,
-    vignette: true,
-    selectedPanel: 'hero',
-    panels: defaultPanels('hero-three'),
+// One-click presets: a layout, grade, look and caption tuned to go together.
+export const RECIPES = [
+  { id: 'vice-nights', name: 'Vice Nights', layout: 'magazine', grade: 'neon', look: 'neon-vice', title: 'VICE NIGHTS', subtitle: 'chase the neon', tagline: 'ONE CITY. EVERY LIGHT TELLS A STORY.' },
+  { id: 'golden-hour', name: 'Golden Hour', layout: 'sunset-strip', grade: 'sunset', look: 'golden-mile', title: 'GOLDEN HOUR', subtitle: 'chase the sunset', tagline: 'THE BOULEVARD AT ITS BEST LIGHT.' },
+  { id: 'street-heat', name: 'Street Heat', layout: 'duo', grade: 'ember', look: 'heatwave', title: 'STREET HEAT', subtitle: 'run it hot', tagline: 'TWO LANES. NO BRAKES. ALL SUMMER.' },
+  { id: 'night-drive', name: 'Night Drive', layout: 'full-bleed', grade: 'midnight', look: 'night-shift', title: 'NIGHT DRIVE', subtitle: 'lights out, city on', tagline: 'THE COAST NEVER SLEEPS.' },
+  { id: 'pier-lights', name: 'Pier Lights', layout: 'hero-three', grade: 'lagoon', look: 'pier-pressure', title: 'PIER LIGHTS', subtitle: 'salt air, neon glare', tagline: 'WHERE THE BOARDWALK MEETS THE BAY.' },
+  { id: 'palm-noir', name: 'Palm Noir', layout: 'triptych', grade: 'mono', look: 'boulevard-queen', title: 'PALM NOIR', subtitle: 'in black and white', tagline: 'SHADOWS, PALMS AND ONE LONG NIGHT.' },
+];
+
+// Curated grade-plus-look pairings for the Randomize button. Stepping through
+// this fixed ring always lands on a combination that was tuned to look
+// deliberate, never a random clash.
+export const GRADE_LOOK_RING = [
+  ['sunset', 'sunset-boulevard'],
+  ['neon', 'neon-vice'],
+  ['vice', 'vice-rush'],
+  ['heatwave', 'heatwave'],
+  ['lagoon', 'pier-pressure'],
+  ['ember', 'heatwave'],
+  ['midnight', 'night-shift'],
+  ['dusk', 'night-shift'],
+  ['rose', 'boulevard-queen'],
+  ['mono', 'boulevard-queen'],
+  ['ultraviolet', 'neon-vice'],
+];
+
+export const SIZES = [
+  { id: 'square', name: 'Square post', label: 'Square 1080 × 1080', w: 1080, h: 1080 },
+  { id: 'portrait', name: 'Portrait post', label: 'Portrait 1080 × 1350', w: 1080, h: 1350 },
+  { id: 'landscape', name: 'Landscape post', label: 'Landscape 1920 × 1080', w: 1920, h: 1080 },
+  { id: 'story', name: 'Story', label: 'Story 1080 × 1920', w: 1080, h: 1920 },
+];
+
+export const STICKERS = [
+  { id: 'sun', name: 'Sun badge', w: 1080, h: 1080 },
+  { id: 'strip', name: 'Title strip', w: 1080, h: 1080 },
+];
+
+/** A small seeded generator (mulberry32): every "random" thing in the app
+ *  comes from here, so the same state always renders byte-identical. */
+export function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-/** Small undo/redo stack over JSON snapshots of the cover state. */
-export function createHistory(initial) {
-  let past = [];
-  let future = [];
-  let current = JSON.parse(JSON.stringify(initial));
+export function layoutById(id) {
+  return LAYOUTS.find((l) => l.id === id) || LAYOUTS[0];
+}
+
+export function gradeById(id) {
+  return GRADES.find((g) => g.id === id) || GRADES[0];
+}
+
+export function lookById(id) {
+  return LOOKS.find((l) => l.id === id) || LOOKS[0];
+}
+
+export function recipeById(id) {
+  return RECIPES.find((r) => r.id === id) || null;
+}
+
+export function sizeById(id) {
+  return SIZES.find((s) => s.id === id) || SIZES[0];
+}
+
+function defaultCrop() {
+  return { zoom: 1, panX: 0, panY: 0 };
+}
+
+/** The fresh default state: the Golden Hour recipe's mood, two sample slots. */
+export function createState() {
   return {
-    get current() { return current; },
-    get canUndo() { return past.length > 0; },
-    get canRedo() { return future.length > 0; },
-    commit(next) {
-      past.push(current);
-      if (past.length > 60) past.shift();
-      future = [];
-      current = JSON.parse(JSON.stringify(next));
-    },
-    undo() {
-      if (!past.length) return null;
-      future.push(current);
-      current = past.pop();
-      return JSON.parse(JSON.stringify(current));
-    },
-    redo() {
-      if (!future.length) return null;
-      past.push(current);
-      current = future.pop();
-      return JSON.parse(JSON.stringify(current));
-    },
+    layout: 'magazine',
+    grade: 'neon',
+    look: 'neon-vice',
+    recipe: 'vice-nights',
+    title: 'VICE NIGHTS',
+    subtitle: 'chase the neon',
+    tagline: 'ONE CITY. EVERY LIGHT TELLS A STORY.',
+    credit: 'A VICE COAST ORIGINAL',
+    heat: 5,
+    size: 'landscape',
+    seed: 20261119,
+    ringStep: 0,
+    panelPhotos: [0, 1, 0, 1],
+    crops: [defaultCrop(), defaultCrop(), defaultCrop(), defaultCrop()],
+    selectedPanel: 0,
   };
+}
+
+/** Grow or trim the per-panel arrays so they match the active layout. */
+export function fitPanels(state) {
+  const n = layoutById(state.layout).panels;
+  while (state.panelPhotos.length < n) state.panelPhotos.push((state.panelPhotos.length + 1) % 2);
+  while (state.crops.length < n) state.crops.push(defaultCrop());
+  state.panelPhotos.length = n;
+  state.crops.length = n;
+  if (state.selectedPanel >= n) state.selectedPanel = 0;
+  return state;
+}
+
+/** Apply a recipe: layout, grade, look and caption all change at once. */
+export function applyRecipe(state, recipeId) {
+  const recipe = recipeById(recipeId);
+  if (!recipe) return state;
+  state.recipe = recipe.id;
+  state.layout = recipe.layout;
+  state.grade = recipe.grade;
+  state.look = recipe.look;
+  state.title = recipe.title;
+  state.subtitle = recipe.subtitle;
+  state.tagline = recipe.tagline;
+  return fitPanels(state);
+}
+
+/** Step to the next curated grade-plus-look pairing. */
+export function randomizeGrade(state) {
+  state.ringStep = (state.ringStep + 1) % GRADE_LOOK_RING.length;
+  const pair = GRADE_LOOK_RING[state.ringStep];
+  state.grade = pair[0];
+  state.look = pair[1];
+  state.recipe = '';
+  return state;
+}
+
+/** Re-deal the photos across the panels with the seeded generator. */
+export function shufflePhotos(state, photoCount) {
+  if (photoCount < 2) return state;
+  const rand = mulberry32(state.seed);
+  state.seed = (state.seed + 7919) >>> 0;
+  const order = state.panelPhotos.slice();
+  for (let i = order.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = order[i];
+    order[i] = order[j];
+    order[j] = tmp;
+  }
+  // Never leave a shuffle that changed nothing visible.
+  if (order.every((v, i) => v === state.panelPhotos[i])) {
+    const first = order[0];
+    order[0] = order[1];
+    order[1] = first;
+  }
+  state.panelPhotos = order;
+  return state;
+}
+
+/** A plain snapshot of everything the renderer needs (photos excluded). */
+export function snapshot(state) {
+  return JSON.parse(JSON.stringify({
+    layout: state.layout,
+    grade: state.grade,
+    look: state.look,
+    recipe: state.recipe,
+    title: state.title,
+    subtitle: state.subtitle,
+    tagline: state.tagline,
+    credit: state.credit,
+    heat: state.heat,
+    size: state.size,
+    seed: state.seed,
+    ringStep: state.ringStep,
+    panelPhotos: state.panelPhotos,
+    crops: state.crops,
+    selectedPanel: state.selectedPanel,
+  }));
+}
+
+export function restore(state, snap) {
+  const fresh = createState();
+  const merged = { ...fresh, ...snap };
+  merged.crops = (snap.crops || []).map((c) => ({ ...defaultCrop(), ...c }));
+  merged.panelPhotos = (snap.panelPhotos || []).slice();
+  Object.assign(state, merged);
+  return fitPanels(state);
+}
+
+/** Undo/redo stacks of snapshots. Every committed change pushes once. */
+export function createHistory() {
+  return { past: [], future: [] };
+}
+
+export function historyPush(history, state) {
+  history.past.push(snapshot(state));
+  if (history.past.length > 80) history.past.shift();
+  history.future.length = 0;
+}
+
+export function historyUndo(history, state) {
+  if (history.past.length === 0) return false;
+  history.future.push(snapshot(state));
+  restore(state, history.past.pop());
+  return true;
+}
+
+export function historyRedo(history, state) {
+  if (history.future.length === 0) return false;
+  history.past.push(snapshot(state));
+  restore(state, history.future.pop());
+  return true;
 }
