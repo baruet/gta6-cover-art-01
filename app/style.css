@@ -1,0 +1,81 @@
+/* Neon Coast Cover Studio — editor chrome. Fonts live under fonts/ (SIL OFL). */
+@font-face { font-family: 'Anton'; src: url('./fonts/anton/Anton-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Pacifico'; src: url('./fonts/pacifico/Pacifico-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Bebas Neue'; src: url('./fonts/bebas-neue/BebasNeue-Regular.ttf') format('truetype'); font-display: swap; }
+
+:root {
+  --bg: #12081f; --bg2: #1d0f30; --panel: #221239; --line: #3d2560;
+  --ink: #f6eefc; --muted: #b9a6d6; --pink: #ff2e88; --orange: #ff9a3c;
+  --cyan: #2ee6ff; --gold: #ffd166; --radius: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.app { display: flex; gap: 0; height: 100vh; overflow: hidden; }
+.controls { width: 348px; flex: none; height: 100vh; background: var(--bg2); border-right: 1px solid var(--line); padding: 20px 18px 28px; overflow-y: auto; }
+.brand h1 { margin: 0; font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: .5px; line-height: 1.05; text-transform: uppercase; background: linear-gradient(90deg, var(--orange), var(--pink) 55%, #b537f2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand h1 span { display: block; font-size: 18px; letter-spacing: 4px; }
+.tagline { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.group { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; }
+.group h2 { margin: 0 0 10px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; }
+.hint { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+label { display: flex; flex-direction: column; gap: 5px; font-weight: 600; font-size: 13px; margin-top: 8px; }
+input[type=text] { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #170b29; color: var(--ink); }
+input[type=text]:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
+input[type=range] { accent-color: var(--pink); width: 100%; }
+.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; }
+.check input { accent-color: var(--pink); }
+.row { display: flex; gap: 8px; margin-top: 10px; }
+.row.between { justify-content: space-between; }
+.file-btn { display: block; text-align: center; padding: 10px; border: 1px dashed var(--pink); border-radius: 8px; cursor: pointer; font-weight: 700; color: var(--pink); }
+.file-btn input { display: none; }
+button { font: inherit; font-weight: 700; padding: 9px 12px; border: 0; border-radius: 8px; cursor: pointer; }
+button.ghost { background: #2c1a4a; color: var(--ink); border: 1px solid var(--line); flex: 1; }
+button.ghost:hover { border-color: var(--pink); }
+button.primary { width: 100%; margin-top: 12px; padding: 13px; font-size: 16px; background: linear-gradient(90deg, var(--orange), var(--pink)); color: #fff; letter-spacing: .5px; }
+button.primary:hover { filter: brightness(1.12); }
+button:disabled { opacity: .45; cursor: default; }
+#status { min-height: 1.2em; margin: 8px 0 0; color: var(--cyan); font-size: 13px; }
+
+/* photo strip */
+.thumb-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }
+.thumb.active { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(46, 230, 255, .35); }
+
+/* layout picker: tiny diagrams */
+.layout-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.layout-btn { padding: 6px 4px 4px; background: #170b29; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 10px; font-weight: 600; line-height: 1.2; }
+.layout-btn.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.layout-btn .diagram { display: block; width: 100%; height: 34px; margin-bottom: 4px; border-radius: 3px; }
+
+/* grade picker */
+.grade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grade-btn { padding: 6px; background: #170b29; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 12px; font-weight: 700; }
+.grade-btn.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.grade-btn .swatch { display: block; height: 26px; border-radius: 5px; margin-bottom: 5px; }
+
+/* size picker */
+.size-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.size-btn { background: #170b29; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); padding: 8px 6px; font-size: 12px; }
+.size-btn.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.size-btn b { display: block; font-size: 14px; }
+
+/* heat stars */
+.stars { display: flex; gap: 4px; }
+.stars button { background: none; border: 0; padding: 2px; font-size: 22px; line-height: 1; color: #5b4480; cursor: pointer; }
+.stars button.on { color: var(--gold); text-shadow: 0 0 10px rgba(255, 209, 102, .8); }
+
+/* stage */
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 18px 24px 24px; min-width: 0; height: 100vh; }
+.stage-bar { width: 100%; max-width: 860px; display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; width: 100%; }
+#cover { max-width: 100%; max-height: calc(100vh - 150px); box-shadow: 0 18px 60px rgba(0, 0, 0, .6), 0 0 0 1px var(--line); border-radius: 4px; cursor: crosshair; }
+#cover.panel-selected { outline: 3px solid var(--cyan); outline-offset: 4px; }
+.stage-hint { color: var(--muted); font-size: 12px; margin: 12px 0 0; }
+
+/* shot modes: hide the editor chrome for a clean cover frame */
+body.shot-cover .controls, body.shot-cover .stage-bar, body.shot-cover .stage-hint { display: none; }
+body.shot-cover .app { display: block; }
+body.shot-cover .stage { padding: 0; }
+body.shot-cover .canvas-wrap { height: 100vh; }
+body.shot-cover #cover { max-width: 100vw; max-height: 100vh; box-shadow: none; border-radius: 0; }
+body.shot-editor .controls { width: 348px; }
